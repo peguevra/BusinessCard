@@ -1,80 +1,77 @@
+using System.Diagnostics;
+using CommonBatchFramework.App;
+
 public class ProcessorService
 {
-    public void Process(string filePath, GlobalPaths paths)
+    private static readonly object _gitLock = new();
+
+    public void Execute(string filePath, GlobalPaths paths)
     {
+        Log.Info($"処理開始: {filePath}");
+
         try
         {
-            WaitForFile(filePath);
+            // 1. レコード生成（最小構造に統一）
+            var record = Parse(filePath);
 
-            string name = InputForm.ShowDialog();
+            // 2. CSV更新
+            new CsvService().Append(paths.CsvPath, record);
 
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                SafeLog.Info("入力キャンセル");
-                return;
-            }
+            // 3. HTML更新（ここが正）
+            new HtmlService().Generate(paths);
 
-            var drive = new GoogleDriveService();
-            string url = drive.UploadAndGetLink(filePath, name);
+            // 4. Driveアップロード（PDF）
+            var driveUrl = new GoogleDriveService()
+                .UploadAndGetLink(filePath, Path.GetFileName(filePath));
 
-            var record = new BuisicessCardRecord
-            {
-                No = DateTime.Now.ToString("yyyyMMddHHmmss"),
-                Name = name,
-                Url = url,
-                Date = DateTime.Now
-            };
+            Log.Info($"Driveアップロード完了: {driveUrl}");
 
-            var csv = new CsvService();
-            csv.Append(paths.CsvPath, record);
+            // 5. HTMLもDriveへ（同じ固定ファイル）
+            new GoogleDriveService()
+                .UploadAndGetLink(paths.HtmlPath, "index.html");
 
-            // ★ HTML生成追加
-            var html = new HtmlService();
-            html.Generate(paths);
+            // 6. Git push
+            PushToGit();
 
-            MoveToDone(filePath, paths.DoneDir, name);
-
-            SafeLog.Info($"処理完了: {name}");
+            Log.Info("処理完了");
         }
         catch (Exception ex)
         {
-            SafeLog.Error(ex.ToString());
+            Log.Error(ex.ToString());
         }
     }
 
-    private void WaitForFile(string path)
+    private BuisicessCardRecord Parse(string filePath)
     {
-        while (true)
+        return new BuisicessCardRecord
         {
-            try
-            {
-                using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None);
-                break;
-            }
-            catch
-            {
-                Thread.Sleep(500);
-            }
-        }
+            No = DateTime.Now.ToString("yyyyMMddHHmmss"),
+            Name = InputForm.ShowDialog(), // ←ここ重要（UI入力）
+            Company = "",
+            Url = "",
+            Date = DateTime.Now,
+            Note = filePath
+        };
     }
 
-    private void MoveToDone(string filePath, string doneDir, string name)
+    private void PushToGit()
     {
-        string ext = Path.GetExtension(filePath);
-        string safeName = Sanitize(name);
-
-        string destPath = Path.Combine(doneDir,
-            $"{safeName}_{DateTime.Now:yyyyMMddHHmmss}{ext}");
-
-        File.Move(filePath, destPath);
-    }
-
-    private string Sanitize(string name)
-    {
-        foreach (var c in Path.GetInvalidFileNameChars())
+        lock (_gitLock)
         {
-            name = name.Replace(c, '_');
+            Run("git add .");
+            Run("git commit -m \"auto update\"");
+            Run("git push");
         }
-        return name;
+    }
+
+    private void Run(string cmd)
+    {
+        var p = new Process();
+        p.StartInfo.FileName = "cmd.exe";
+        p.StartInfo.Arguments = "/c " + cmd;
+        p.StartInfo.UseShellExecute = false;
+        p.StartInfo.CreateNoWindow = true;
+        p.Start();
+        p.WaitForExit();
     }
 }

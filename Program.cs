@@ -1,23 +1,22 @@
 ﻿using CommonBatchFramework.App;
+using CommonBatchFramework.App;
 
-class Program
+AppRunner.Run(() =>
 {
-    [STAThread]
-    static void Main()
-    {
-        AppRunner.Run(() =>
-        {
-            var paths = new GlobalPaths();
-            paths.EnsureDirectories();
+    var paths = new GlobalPaths();
+    paths.EnsureDirectories();
 
-            Log.Initialize(paths.OutputDir);
+    Log.Initialize(paths.OutputDir);
 
-            SafeLog.Info("監視開始");
+    Log.Info("処理開始");
 
-            var watcher = new WatcherService();
-            watcher.Start(paths);
+    var watcher = new WatcherService();
+    var processor = new ProcessorService();
 
-            Thread.Sleep(Timeout.Infinite);
-        });
-    }
-}
+    watcher.Start(paths, processor);
+
+    Log.Info("監視開始");
+
+    // 常駐
+    Thread.Sleep(Timeout.Infinite);
+});

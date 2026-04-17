@@ -1,41 +1,61 @@
-﻿
-<!DOCTYPE html>
-<html>
+﻿<html>
 <head>
-<meta charset='UTF-8'>
-<title>名刺一覧</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<style>
+body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
+.card {
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.card a {
+  display:block;
+  text-decoration:none;
+  color:inherit;
+}
+.name {
+  font-size:16px;
+  font-weight:600;
+}
+.date {
+  font-size:10px;
+  color:#888;
+  margin-top:4px;
+}
+</style>
 </head>
 <body>
-<h2>名刺一覧</h2>
-
-<table border='1'>
-<tr><th>日時</th><th>名前</th><th>リンク</th></tr>
-
-<tr>
-<td>No</td>
-<td>Name</td>
-<td><a href='Company' target='_blank'>開く</a></td>
-</tr>
-<tr>
-<td>2026/4/16 18:44</td>
-<td>CM 特別養護老人ホーム三清荘　難波史子</td>
-<td><a href='https://drive.google.com/file/d/1BAUmKzdW2UZGiSvOdVUH_AFm3ynK_QK8/view' target='_blank'>開く</a></td>
-</tr>
-<tr>
-<td>2026/4/16 18:52</td>
-<td>SW　芳野病院　藤田千尋</td>
-<td><a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view' target='_blank'>開く</a></td>
-</tr>
-<tr>
-<td>2026/4/17 12:02</td>
-<td>EX　真庭市くらし安全課　旦優紀</td>
-<td><a href='https://drive.google.com/file/d/19rw7MX04DqsRgPu1TGtq9dGcZGB-DxV8/view' target='_blank'>開く</a></td>
-</tr>
-<tr>
-<td>2026-04-17 13:38:43</td>
-<td>test</td>
-<td><a href='https://drive.google.com/file/d/1I98sVW7-knIOqFY1fr9LKgRz5avJ5fRN/view' target='_blank'>開く</a></td>
-</tr>
-</table>
+<div class='card'>
+<a href='Company'>
+<div class='name'>Name</div>
+<div class='date'>No</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/1BAUmKzdW2UZGiSvOdVUH_AFm3ynK_QK8/view'>
+<div class='name'>CM 特別養護老人ホーム三清荘　難波史子</div>
+<div class='date'>2026/4/16 18:44</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view'>
+<div class='name'>SW　芳野病院　藤田千尋</div>
+<div class='date'>2026/4/16 18:52</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/19rw7MX04DqsRgPu1TGtq9dGcZGB-DxV8/view'>
+<div class='name'>EX　真庭市くらし安全課　旦優紀</div>
+<div class='date'>2026/4/17 12:02</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/1N2d7oFxT6Ye2An668mFuVigABvhTgauj/view'>
+<div class='name'>test</div>
+<div class='date'>2026-04-17 14:14:33</div>
+</a>
+</div>
 </body>
 </html>

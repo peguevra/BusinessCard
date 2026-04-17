@@ -1,5 +1,4 @@
 ﻿using CommonBatchFramework.App;
-using CommonBatchFramework.App;
 
 AppRunner.Run(() =>
 {
@@ -11,12 +10,9 @@ AppRunner.Run(() =>
     Log.Info("処理開始");
 
     var watcher = new WatcherService();
-    var processor = new ProcessorService();
-
-    watcher.Start(paths, processor);
+    watcher.Start(paths);
 
     Log.Info("監視開始");
 
-    // 常駐
-    Thread.Sleep(Timeout.Infinite);
+    Console.ReadLine();
 });

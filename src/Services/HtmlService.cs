@@ -1,35 +1,73 @@
-using System.Text;
+using System;
+using System.IO;
+using System.Linq;
 
 public class HtmlService
 {
-    public void Generate(GlobalPaths paths)
+    public void GenerateFromCsv(GlobalPaths paths)
     {
-        if (!File.Exists(paths.CsvPath)) return;
+        var csvPath = paths.CsvPath;
+        var htmlPath = paths.HtmlPath;
 
-        var lines = File.ReadAllLines(paths.CsvPath);
+        if (!File.Exists(csvPath))
+            return;
 
-        var sb = new StringBuilder();
+        var lines = File.ReadAllLines(csvPath)
+                         .Skip(1)
+                         .Where(x => !string.IsNullOrWhiteSpace(x))
+                         .ToList();
 
-        sb.AppendLine("<html><head><meta charset='utf-8'><title>名刺一覧</title></head><body>");
-        sb.AppendLine("<h1>名刺一覧</h1>");
-        sb.AppendLine("<table border='1'>");
+        var html = CreateHeader();
 
-        foreach (var line in lines.Skip(1))
+        foreach (var line in lines)
         {
             var cols = line.Split(',');
 
-            if (cols.Length < 5) continue;
+            if (cols.Length < 3) continue;
 
-            sb.AppendLine("<tr>");
-            sb.AppendLine($"<td>{cols[0]}</td>");
-            sb.AppendLine($"<td>{cols[1]}</td>");
-            sb.AppendLine($"<td><a href='{cols[3]}'>開く</a></td>");
-            sb.AppendLine($"<td>{cols[4]}</td>");
-            sb.AppendLine("</tr>");
+            html +=
+                $"<tr>" +
+                $"<td>{cols[0]}</td>" +
+                $"<td>{cols[1]}</td>" +
+                $"<td><a href='{cols[2]}'>開く</a></td>" +
+                $"</tr>\n";
         }
 
-        sb.AppendLine("</table></body></html>");
+        html += "</tbody></table></body></html>";
 
-        File.WriteAllText(paths.HtmlPath, sb.ToString(), Encoding.UTF8);
+        File.WriteAllText(htmlPath, html);
+    }
+
+    private string CreateHeader()
+    {
+        return @"<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>名刺一覧</title>
+
+<style>
+body { font-family: -apple-system; margin: 10px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #ccc; padding: 8px; }
+th { background: #f5f5f5; }
+a { color: blue; }
+</style>
+
+</head>
+<body>
+
+<h2>名刺一覧</h2>
+
+<table>
+<thead>
+<tr>
+<th>日付</th>
+<th>名前</th>
+<th>リンク</th>
+</tr>
+</thead>
+<tbody>";
     }
 }

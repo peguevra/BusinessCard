@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <PackageReference Include="CommonBatchFramework" Version="1.0.7" />
+    <PackageReference Include="Google.Apis" Version="1.73.0" />
+    <PackageReference Include="Google.apis.Auth" Version="1.73.0" />
+    <PackageReference Include="Google.apis.Drive.v3" Version="1.73.0.4112" />
   </ItemGroup>
 
 </Project>

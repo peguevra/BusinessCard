@@ -6,17 +6,11 @@ public static class SafeLog
 
     public static void Info(string msg)
     {
-        lock (_lock)
-        {
-            Log.Info(msg);
-        }
+        lock (_lock) Log.Info(msg);
     }
 
     public static void Error(string msg)
     {
-        lock (_lock)
-        {
-            Log.Error(msg);
-        }
+        lock (_lock) Log.Error(msg);
     }
 }

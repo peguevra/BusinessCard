@@ -1,31 +1,34 @@
+using System;
+using System.IO;
 using System.Text;
+using System.Threading;
 
 public class CsvService
 {
-    public void Append(string path, BuisicessCardRecord record)
+    public void Append(BuisicessCardRecord record, string outputDir)
     {
-        bool exists = File.Exists(path);
+        var path = Path.Combine(outputDir, "index.csv");
 
-        using var sw = new StreamWriter(path, true, Encoding.UTF8);
+        var line = $"{record.CreatedAt:yyyy-MM-dd HH:mm:ss},{record.Name},{record.Url}";
 
-        if (!exists)
-        {
-            sw.WriteLine("No,Name,Company,Url,Date,Note");
-        }
-
-        string line = $"{record.No},{Escape(record.Name)},{Escape(record.Company)},{record.Url},{record.Date:yyyy-MM-dd HH:mm:ss},{Escape(record.Note)}";
-        sw.WriteLine(line);
+        WriteWithRetry(path, line + Environment.NewLine);
     }
 
-    private string Escape(string value)
+    private void WriteWithRetry(string path, string content)
     {
-        if (string.IsNullOrEmpty(value)) return "";
-
-        if (value.Contains(",") || value.Contains("\""))
+        for (int i = 0; i < 10; i++)
         {
-            return $"\"{value.Replace("\"", "\"\"")}\"";
+            try
+            {
+                File.AppendAllText(path, content, Encoding.UTF8);
+                return;
+            }
+            catch
+            {
+                Thread.Sleep(200);
+            }
         }
 
-        return value;
+        SafeLog.Error("CSV書き込み失敗: " + path);
     }
 }

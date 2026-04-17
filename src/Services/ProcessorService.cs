@@ -1,77 +1,75 @@
-using System.Diagnostics;
-using CommonBatchFramework.App;
+using System;
+using System.IO;
 
 public class ProcessorService
 {
-    private static readonly object _gitLock = new();
-
     public void Execute(string filePath, GlobalPaths paths)
     {
-        Log.Info($"処理開始: {filePath}");
-
         try
         {
-            // 1. レコード生成（最小構造に統一）
-            var record = Parse(filePath);
+            SafeLog.Info("処理開始: " + filePath);
 
-            // 2. CSV更新
-            new CsvService().Append(paths.CsvPath, record);
+            var name = InputForm.ShowDialog();
 
-            // 3. HTML更新（ここが正）
-            new HtmlService().Generate(paths);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                SafeLog.Info("キャンセル");
+                return;
+            }
 
-            // 4. Driveアップロード（PDF）
-            var driveUrl = new GoogleDriveService()
-                .UploadAndGetLink(filePath, Path.GetFileName(filePath));
+            var newFileName = $"{name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            var donePath = Path.Combine(paths.DoneDir, newFileName);
 
-            Log.Info($"Driveアップロード完了: {driveUrl}");
+            File.Copy(filePath, donePath, true);
+            File.Delete(filePath);
 
-            // 5. HTMLもDriveへ（同じ固定ファイル）
-            new GoogleDriveService()
-                .UploadAndGetLink(paths.HtmlPath, "index.html");
+            var drive = new GoogleDriveService();
 
-            // 6. Git push
-            PushToGit();
+            string url = "";
+            try
+            {
+                url = drive.UploadPdf(donePath, newFileName);
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("Drive失敗: " + ex);
+                url = "LOCAL_ONLY";
+            }
 
-            Log.Info("処理完了");
+            var record = new BuisicessCardRecord
+            {
+                Name = name,
+                Url = url,
+                CreatedAt = DateTime.Now
+            };
+
+            // CSV（唯一の正本）
+            new CsvService().Append(record, paths.OutputDir);
+
+            // HTMLはCSVから再生成
+            new HtmlService().GenerateFromCsv(paths);
+
+            // GitHubへ反映
+            try
+            {
+                var p = new System.Diagnostics.Process();
+                p.StartInfo.FileName = "cmd.exe";
+                p.StartInfo.Arguments = "/c git add . && git commit -m \"auto update\" && git push";
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.Start();
+                p.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("Git失敗: " + ex);
+            }
+
+            SafeLog.Info("処理完了: " + name);
         }
         catch (Exception ex)
         {
-            Log.Error(ex.ToString());
+            SafeLog.Error("致命的エラー: " + ex);
         }
-    }
-
-    private BuisicessCardRecord Parse(string filePath)
-    {
-        return new BuisicessCardRecord
-        {
-            No = DateTime.Now.ToString("yyyyMMddHHmmss"),
-            Name = InputForm.ShowDialog(), // ←ここ重要（UI入力）
-            Company = "",
-            Url = "",
-            Date = DateTime.Now,
-            Note = filePath
-        };
-    }
-
-    private void PushToGit()
-    {
-        lock (_gitLock)
-        {
-            Run("git add .");
-            Run("git commit -m \"auto update\"");
-            Run("git push");
-        }
-    }
-
-    private void Run(string cmd)
-    {
-        var p = new Process();
-        p.StartInfo.FileName = "cmd.exe";
-        p.StartInfo.Arguments = "/c " + cmd;
-        p.StartInfo.UseShellExecute = false;
-        p.StartInfo.CreateNoWindow = true;
-        p.Start();
-        p.WaitForExit();
     }
 }

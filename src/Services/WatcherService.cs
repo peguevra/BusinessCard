@@ -1,44 +1,56 @@
+using System;
 using System.IO;
+using System.Threading;
 
 public class WatcherService
 {
-    private FileSystemWatcher _watcher;
+    private FileSystemWatcher? _watcher;
+    private readonly object _lock = new();
 
-    public void Start(GlobalPaths paths, ProcessorService processor)
+    public void Start(GlobalPaths paths)
     {
-        _watcher = new FileSystemWatcher(paths.InputDir);
+        var dir = paths.InputDir;
 
-        // PDF生成直後のイベント
-        _watcher.Created += (s, e) =>
+        SafeLog.Info("監視対象: " + dir);
+
+        _watcher = new FileSystemWatcher(dir)
         {
-            SafeLog.Info($"イベント検知: {e.FullPath}");
-
-            try
-            {
-                processor.Execute(e.FullPath, paths);
-            }
-            catch (Exception ex)
-            {
-                SafeLog.Error(ex.ToString());
-            }
+            Filter = "*.pdf",
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite
         };
 
-        // 変更イベント（スキャナ等の追従用）
-        _watcher.Changed += (s, e) =>
-        {
-            SafeLog.Info($"変更検知: {e.FullPath}");
-        };
+        _watcher.Created += (s, e) => OnEvent(e.FullPath, paths);
 
-        // 削除イベント（後片付け確認用）
-        _watcher.Deleted += (s, e) =>
-        {
-            SafeLog.Info($"削除検知: {e.FullPath}");
-        };
-
-        _watcher.IncludeSubdirectories = false;
         _watcher.EnableRaisingEvents = true;
 
-        SafeLog.Info($"監視対象: {paths.InputDir}");
         SafeLog.Info("Watcher起動完了");
+    }
+
+    private void OnEvent(string path, GlobalPaths paths)
+    {
+        lock (_lock)
+        {
+            SafeLog.Info("イベント検知: " + path);
+
+            WaitForFile(path);
+
+            new ProcessorService().Execute(path, paths);
+        }
+    }
+
+    private void WaitForFile(string path)
+    {
+        while (true)
+        {
+            try
+            {
+                using var s = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None);
+                break;
+            }
+            catch
+            {
+                Thread.Sleep(300);
+            }
+        }
     }
 }

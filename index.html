@@ -2,15 +2,7 @@
 <head>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
 <style>
-body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
-.header {
-  display:flex;
-  font-weight:bold;
-  margin-bottom:10px;
-  color:#666;
-}
-.header .name { flex:1; }
-.header .date { width:120px; text-align:right; }
+body { font-family:sans-serif; background:#f2f2f2; margin:0; padding:10px; }
 .card {
   background:#fff;
   border-radius:14px;
@@ -23,51 +15,62 @@ body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
   text-decoration:none;
   color:inherit;
 }
-.name {
-  font-size:16px;
-  font-weight:600;
-}
-.date {
-  font-size:10px;
-  color:#888;
-  margin-top:4px;
-}
+.name { font-size:15px; font-weight:600; }
+.date { font-size:15px; color:#666; margin-top:4px; }
 </style>
+<script>
+let sortAsc = true;
+function sortBy(type) {
+  const container = document.getElementById('list');
+  const cards = Array.from(container.children);
+  cards.sort((a, b) => {
+    const av = a.dataset[type];
+    const bv = b.dataset[type];
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  sortAsc = !sortAsc;
+  cards.forEach(c => container.appendChild(c));
+}
+</script>
 </head>
 <body>
-<div class='header'>
-<div class='name'>Name</div>
-<div class='date'>Date</div>
+<div style='display:flex; font-weight:600; margin-bottom:10px;'>
+<div onclick="sortBy('name')" style='flex:1; cursor:pointer;'>Name</div>
+<div onclick="sortBy('date')" style='width:120px; text-align:right; cursor:pointer;'>Date</div>
 </div>
-<div class='card'>
+<div id='list'>
+<div class='card' data-name='Name' data-date='No'>
 <a href='Company'>
 <div class='name'>Name</div>
 <div class='date'>No</div>
 </a>
 </div>
-<div class='card'>
-<a href='https://drive.google.com/file/d/19rw7MX04DqsRgPu1TGtq9dGcZGB-DxV8/view'>
-<div class='name'>EX　真庭市くらし安全課　旦優紀</div>
-<div class='date'>2026/4/17 12:02</div>
-</a>
-</div>
-<div class='card'>
-<a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view'>
-<div class='name'>SW　芳野病院　藤田千尋</div>
-<div class='date'>2026/4/16 18:52</div>
-</a>
-</div>
-<div class='card'>
+<div class='card' data-name='CM 特別養護老人ホーム三清荘　難波史子' data-date='2026/4/16 18:44'>
 <a href='https://drive.google.com/file/d/1BAUmKzdW2UZGiSvOdVUH_AFm3ynK_QK8/view'>
 <div class='name'>CM 特別養護老人ホーム三清荘　難波史子</div>
 <div class='date'>2026/4/16 18:44</div>
 </a>
 </div>
-<div class='card'>
-<a href='https://drive.google.com/file/d/1mrRe_o9kfVXOof6FD1VxzFc2QDx3Bhp-/view'>
-<div class='name'>test2</div>
-<div class='date'>2026-04-17 14:19:43</div>
+<div class='card' data-name='SW　芳野病院　藤田千尋' data-date='2026/4/16 18:52'>
+<a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view'>
+<div class='name'>SW　芳野病院　藤田千尋</div>
+<div class='date'>2026/4/16 18:52</div>
 </a>
+</div>
+<div class='card' data-name='EX　真庭市くらし安全課　旦優紀' data-date='2026/4/17 12:02'>
+<a href='https://drive.google.com/file/d/19rw7MX04DqsRgPu1TGtq9dGcZGB-DxV8/view'>
+<div class='name'>EX　真庭市くらし安全課　旦優紀</div>
+<div class='date'>2026/4/17 12:02</div>
+</a>
+</div>
+<div class='card' data-name='test3' data-date='2026-04-17 14:23:01'>
+<a href='https://drive.google.com/file/d/1t4YNRBXXZGr8LayZJ8ft4SqJPM8j49M3/view'>
+<div class='name'>test3</div>
+<div class='date'>2026-04-17 14:23:01</div>
+</a>
+</div>
 </div>
 </body>
 </html>

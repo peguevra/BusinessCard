@@ -3,6 +3,14 @@
 <meta name='viewport' content='width=device-width, initial-scale=1'>
 <style>
 body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
+.header {
+  display:flex;
+  font-weight:bold;
+  margin-bottom:10px;
+  color:#666;
+}
+.header .name { flex:1; }
+.header .date { width:120px; text-align:right; }
 .card {
   background:#fff;
   border-radius:14px;
@@ -27,22 +35,14 @@ body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
 </style>
 </head>
 <body>
+<div class='header'>
+<div class='name'>Name</div>
+<div class='date'>Date</div>
+</div>
 <div class='card'>
 <a href='Company'>
 <div class='name'>Name</div>
 <div class='date'>No</div>
-</a>
-</div>
-<div class='card'>
-<a href='https://drive.google.com/file/d/1BAUmKzdW2UZGiSvOdVUH_AFm3ynK_QK8/view'>
-<div class='name'>CM 特別養護老人ホーム三清荘　難波史子</div>
-<div class='date'>2026/4/16 18:44</div>
-</a>
-</div>
-<div class='card'>
-<a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view'>
-<div class='name'>SW　芳野病院　藤田千尋</div>
-<div class='date'>2026/4/16 18:52</div>
 </a>
 </div>
 <div class='card'>
@@ -52,9 +52,21 @@ body { font-family: sans-serif; background:#f2f2f2; margin:0; padding:10px; }
 </a>
 </div>
 <div class='card'>
-<a href='https://drive.google.com/file/d/1N2d7oFxT6Ye2An668mFuVigABvhTgauj/view'>
-<div class='name'>test</div>
-<div class='date'>2026-04-17 14:14:33</div>
+<a href='https://drive.google.com/file/d/141ewxKuussFjNUkF8xOzk3He6b4P8-X8/view'>
+<div class='name'>SW　芳野病院　藤田千尋</div>
+<div class='date'>2026/4/16 18:52</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/1BAUmKzdW2UZGiSvOdVUH_AFm3ynK_QK8/view'>
+<div class='name'>CM 特別養護老人ホーム三清荘　難波史子</div>
+<div class='date'>2026/4/16 18:44</div>
+</a>
+</div>
+<div class='card'>
+<a href='https://drive.google.com/file/d/1mrRe_o9kfVXOof6FD1VxzFc2QDx3Bhp-/view'>
+<div class='name'>test2</div>
+<div class='date'>2026-04-17 14:19:43</div>
 </a>
 </div>
 </body>

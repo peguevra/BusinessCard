@@ -47,15 +47,39 @@ public class DeployService
             CreateNoWindow = true
         };
 
-        var p = Process.Start(psi);
+        using var p = Process.Start(psi);
+
+        if (p == null)
+        {
+            SafeLog.Error("Gitプロセス起動失敗: " + command);
+            return;
+        }
+
+        string output = p.StandardOutput.ReadToEnd();
+        string error = p.StandardError.ReadToEnd();
+
         p.WaitForExit();
 
-        var output = p.StandardOutput.ReadToEnd();
-        var error = p.StandardError.ReadToEnd();
+        // =========================
+        // 成功判定は ExitCode
+        // =========================
+        if (p.ExitCode != 0)
+        {
+            SafeLog.Error($"Git失敗 (code={p.ExitCode}) : {error}");
+            return;
+        }
 
+        // =========================
+        // stderrは警告レベル扱い
+        // =========================
         if (!string.IsNullOrWhiteSpace(error))
         {
-            SafeLog.Error("Git error: " + error);
+            SafeLog.Info("Git警告/出力: " + error);
+        }
+
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            SafeLog.Info("Git出力: " + output);
         }
     }
 }

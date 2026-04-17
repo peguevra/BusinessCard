@@ -104,6 +104,20 @@ public class ProcessorService
                 SafeLog.Error("HTML Drive反映失敗: " + ex);
             }
 
+            // =========================
+            // 7. GitHub Deploy（追加）
+            // =========================
+            try
+            {
+                SafeLog.Info("GitHub Deploy開始");
+                new DeployService().Deploy();
+                SafeLog.Info("GitHub Deploy完了");
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("Deploy呼び出し失敗: " + ex);
+            }
+
             SafeLog.Info("処理完了: " + name);
         }
         catch (Exception ex)

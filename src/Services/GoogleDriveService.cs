@@ -2,39 +2,60 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 
 public class GoogleDriveService
 {
     private DriveService _service;
-    private const string FolderId = "YOUR_FOLDER_ID";
+
+    private const string FolderId = "1iB4xhSNNXZVhT5hZf57sc5bj1eDYL1kL";
 
     public GoogleDriveService()
     {
-        _service = Create();
+        _service = CreateService();
     }
 
-    private DriveService Create()
+    private DriveService CreateService()
     {
-        using var stream = new FileStream("credentials.json", FileMode.Open);
+        // ★Program.csと同じ場所基準
+        var baseDir = AppContext.BaseDirectory;
 
-        var cred = GoogleWebAuthorizationBroker.AuthorizeAsync(
+        // bin → プロジェクトルートへ戻す
+        var projectRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
+
+        var credentialPath = Path.Combine(projectRoot, "credentials.json");
+
+        if (!File.Exists(credentialPath))
+        {
+            throw new FileNotFoundException("credentials.json が見つかりません", credentialPath);
+        }
+
+        using var stream = new FileStream(credentialPath, FileMode.Open, FileAccess.Read);
+
+        var credPath = Path.Combine(projectRoot, "token.json");
+
+        var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
             GoogleClientSecrets.FromStream(stream).Secrets,
             new[] { DriveService.Scope.DriveFile },
             "user",
             CancellationToken.None,
-            new FileDataStore("token.json", true)
+            new FileDataStore(credPath, true)
         ).Result;
 
-        return new DriveService(new BaseClientService.Initializer
+        return new DriveService(new BaseClientService.Initializer()
         {
-            HttpClientInitializer = cred,
-            ApplicationName = "BusinessCard"
+            HttpClientInitializer = credential,
+            ApplicationName = "BusinessCardApp"
         });
     }
 
     public string UploadPdf(string filePath, string name)
     {
-        var meta = new Google.Apis.Drive.v3.Data.File
+        var fileMetadata = new Google.Apis.Drive.v3.Data.File()
         {
             Name = name,
             Parents = new List<string> { FolderId }
@@ -42,65 +63,84 @@ public class GoogleDriveService
 
         using var stream = new FileStream(filePath, FileMode.Open);
 
-        var req = _service.Files.Create(meta, stream, "application/pdf");
-        req.Fields = "id";
-        req.Upload();
+        var request = _service.Files.Create(fileMetadata, stream, "application/pdf");
+        request.Fields = "id";
+        request.Upload();
 
-        var id = req.ResponseBody.Id;
+        var file = request.ResponseBody;
 
-        _service.Permissions.Create(new Google.Apis.Drive.v3.Data.Permission
+        var permission = new Google.Apis.Drive.v3.Data.Permission()
         {
             Type = "anyone",
             Role = "reader"
-        }, id).Execute();
+        };
 
-        return $"https://drive.google.com/file/d/{id}/view";
+        _service.Permissions.Create(permission, file.Id).Execute();
+
+        return $"https://drive.google.com/file/d/{file.Id}/view";
     }
 
-    public void UploadOrUpdateHtml(string path)
+    public void UploadOrUpdateHtml(string filePath)
     {
-        var fileId = Find("index.html");
+        var fileId = FindFileId("index.html");
 
         if (fileId == null)
-            UploadNew(path);
+        {
+            UploadNewHtml(filePath);
+        }
         else
-            Update(fileId, path);
+        {
+            UpdateHtml(fileId, filePath);
+        }
     }
 
-    private string? Find(string name)
+    private string? FindFileId(string fileName)
     {
-        var req = _service.Files.List();
-        req.Q = $"name='{name}' and '{FolderId}' in parents and trashed=false";
-        req.Fields = "files(id,name)";
+        var listRequest = _service.Files.List();
+        listRequest.Q = $"name = '{fileName}' and '{FolderId}' in parents and trashed = false";
+        listRequest.Fields = "files(id, name)";
 
-        return req.Execute().Files.FirstOrDefault()?.Id;
+        var result = listRequest.Execute();
+
+        return result.Files.FirstOrDefault()?.Id;
     }
 
-    private void UploadNew(string path)
+    private void UploadNewHtml(string filePath)
     {
-        var meta = new Google.Apis.Drive.v3.Data.File
+        var metadata = new Google.Apis.Drive.v3.Data.File()
         {
             Name = "index.html",
             Parents = new List<string> { FolderId }
         };
 
-        using var stream = new FileStream(path, FileMode.Open);
+        using var stream = new FileStream(filePath, FileMode.Open);
 
-        var req = _service.Files.Create(meta, stream, "text/html");
-        req.Fields = "id";
-        req.Upload();
+        var request = _service.Files.Create(metadata, stream, "text/html");
+        request.Fields = "id";
+        request.Upload();
+
+        var file = request.ResponseBody;
+
+        var permission = new Google.Apis.Drive.v3.Data.Permission()
+        {
+            Type = "anyone",
+            Role = "reader"
+        };
+
+        _service.Permissions.Create(permission, file.Id).Execute();
     }
 
-    private void Update(string id, string path)
+    private void UpdateHtml(string fileId, string filePath)
     {
-        using var stream = new FileStream(path, FileMode.Open);
+        using var stream = new FileStream(filePath, FileMode.Open);
 
-        var req = _service.Files.Update(
+        var request = _service.Files.Update(
             new Google.Apis.Drive.v3.Data.File(),
-            id,
+            fileId,
             stream,
-            "text/html");
+            "text/html"
+        );
 
-        req.Upload();
+        request.Upload();
     }
 }

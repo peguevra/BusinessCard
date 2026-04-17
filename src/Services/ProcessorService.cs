@@ -9,6 +9,9 @@ public class ProcessorService
         {
             SafeLog.Info("処理開始: " + filePath);
 
+            // =========================
+            // 1. 名前入力
+            // =========================
             var name = InputForm.ShowDialog();
 
             if (string.IsNullOrWhiteSpace(name))
@@ -17,25 +20,42 @@ public class ProcessorService
                 return;
             }
 
+            // =========================
+            // 2. ファイル名生成
+            // =========================
             var newFileName = $"{name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
             var donePath = Path.Combine(paths.DoneDir, newFileName);
 
             File.Copy(filePath, donePath, true);
+
+            // 元ファイル削除（重要）
             File.Delete(filePath);
 
+            // =========================
+            // 3. Google Driveアップロード（安全化）
+            // =========================
             var drive = new GoogleDriveService();
 
-            string url = "";
+            string url;
+
             try
             {
+                SafeLog.Info("Driveアップロード開始");
                 url = drive.UploadPdf(donePath, newFileName);
+                SafeLog.Info("Driveアップロード完了: " + url);
             }
             catch (Exception ex)
             {
                 SafeLog.Error("Drive失敗: " + ex);
+
+                // Drive失敗でも処理継続
                 url = "LOCAL_ONLY";
             }
 
+            // =========================
+            // 4. CSV追記（唯一の正本）
+            // =========================
             var record = new BuisicessCardRecord
             {
                 Name = name,
@@ -43,26 +63,45 @@ public class ProcessorService
                 CreatedAt = DateTime.Now
             };
 
-            // CSV（唯一の正本）
-            new CsvService().Append(record, paths.OutputDir);
+            var csv = new CsvService();
 
-            // HTMLはCSVから再生成
-            new HtmlService().GenerateFromCsv(paths);
-
-            // GitHubへ反映
             try
             {
-                var p = new System.Diagnostics.Process();
-                p.StartInfo.FileName = "cmd.exe";
-                p.StartInfo.Arguments = "/c git add . && git commit -m \"auto update\" && git push";
-                p.StartInfo.UseShellExecute = false;
-                p.StartInfo.CreateNoWindow = true;
-                p.Start();
-                p.WaitForExit();
+                csv.Append(record, paths.OutputDir);
             }
             catch (Exception ex)
             {
-                SafeLog.Error("Git失敗: " + ex);
+                SafeLog.Error("CSV失敗: " + ex);
+            }
+
+            // =========================
+            // 5. HTML再生成（CSVから毎回生成）
+            // =========================
+            var html = new HtmlService();
+
+            try
+            {
+                html.GenerateFromCsv(paths.OutputDir);
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("HTML生成失敗: " + ex);
+            }
+
+            // =========================
+            // 6. HTMLをGoogle Driveへ反映
+            // =========================
+            try
+            {
+                var htmlPath = Path.Combine(paths.OutputDir, "index.html");
+
+                SafeLog.Info("HTMLアップロード開始");
+                drive.UploadOrUpdateHtml(htmlPath);
+                SafeLog.Info("HTMLアップロード完了");
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("HTML Drive反映失敗: " + ex);
             }
 
             SafeLog.Info("処理完了: " + name);

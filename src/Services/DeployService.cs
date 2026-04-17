@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 
 public class DeployService
 {
@@ -14,24 +15,58 @@ public class DeployService
     {
         try
         {
-            // =========================
-            // 1. ファイルコピー
-            // =========================
             var destPath = Path.Combine(gitSyncPath, "index.html");
 
-            File.Copy(sourceHtmlPath, destPath, true);
+            // =========================
+            // 1. HTMLコピー
+            // =========================
+            var html = File.ReadAllText(sourceHtmlPath);
 
             // =========================
-            // 2. Git実行
+            // 2. バージョン付与
+            // =========================
+            var version = DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            // すでにindex.htmlを開いている場合のキャッシュ対策
+            html = AddCacheBuster(html, version);
+
+            File.WriteAllText(destPath, html);
+
+            // =========================
+            // 3. Git実行
             // =========================
             RunGit("git add index.html");
             RunGit("git commit -m \"auto deploy index.html\"");
             RunGit("git push origin deploy");
+
+            SafeLog.Info("Deploy完了 v=" + version);
         }
         catch (Exception ex)
         {
             SafeLog.Error("Deploy失敗: " + ex);
         }
+    }
+
+    /// <summary>
+    /// HTML内の参照URLにバージョンを付与
+    /// </summary>
+    private string AddCacheBuster(string html, string version)
+    {
+        // index.html 自体をクエリ付きで扱うための仕込み
+        // （後述のJS or metaで利用可能）
+
+        var tag = $"?v={version}";
+
+        // もしCSS/JSがあればそこにも拡張可能
+        html = Regex.Replace(html, @"index\.html(\?v=\d+)?", $"index.html{tag}");
+
+        // bodyに埋め込む（任意だがデバッグに便利）
+        html = html.Replace(
+            "<body>",
+            $"<body data-version=\"{version}\">"
+        );
+
+        return html;
     }
 
     private void RunGit(string command)
@@ -51,7 +86,7 @@ public class DeployService
 
         if (p == null)
         {
-            SafeLog.Error("Gitプロセス起動失敗: " + command);
+            SafeLog.Error("Gitプロセス起動失敗");
             return;
         }
 
@@ -60,26 +95,15 @@ public class DeployService
 
         p.WaitForExit();
 
-        // =========================
-        // 成功判定は ExitCode
-        // =========================
         if (p.ExitCode != 0)
         {
-            SafeLog.Error($"Git失敗 (code={p.ExitCode}) : {error}");
+            SafeLog.Error($"Git失敗: {error}");
             return;
-        }
-
-        // =========================
-        // stderrは警告レベル扱い
-        // =========================
-        if (!string.IsNullOrWhiteSpace(error))
-        {
-            SafeLog.Info("Git警告/出力: " + error);
         }
 
         if (!string.IsNullOrWhiteSpace(output))
         {
-            SafeLog.Info("Git出力: " + output);
+            SafeLog.Info(output);
         }
     }
 }

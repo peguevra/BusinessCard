@@ -7,17 +7,18 @@ public class GlobalPaths
 
     public string OutputDir => Path.Combine(BaseDir, "Output");
 
-    // 旧（残すが使わない）
     public string CsvPath => Path.Combine(OutputDir, "index.csv");
-    public string HtmlPath => Path.Combine(OutputDir, "index.html");
 
-    // ★追加：deploy2
-    public string DeployDir => @"C:\Users\sr01\Desktop\MACRO\C\deploy2";
+    // ★ deploy2 のローカルcloneパス
+    public string Deploy2Dir => @"C:\Users\sr01\Desktop\MACRO\C\deploy2";
+
+    public string DeployJsonPath => Path.Combine(Deploy2Dir, "data.json");
 
     public void EnsureDirectories()
     {
         Directory.CreateDirectory(InputDir);
         Directory.CreateDirectory(DoneDir);
         Directory.CreateDirectory(OutputDir);
+        Directory.CreateDirectory(Deploy2Dir);
     }
 }

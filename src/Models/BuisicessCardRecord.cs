@@ -1,3 +1,5 @@
+using System;
+
 public class BuisicessCardRecord
 {
     public string Category { get; set; } = "";

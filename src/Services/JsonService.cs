@@ -3,17 +3,14 @@ using System.Text.Json;
 
 public class JsonService
 {
-    public void Generate(string outputDir, string deployDir)
+    public void Generate(GlobalPaths paths)
     {
-        var csvPath = Path.Combine(outputDir, "index.csv");
-        var jsonPath = Path.Combine(deployDir, "data.json");
-
-        if (!File.Exists(csvPath))
-            return;
-
         var list = new List<object>();
 
-        foreach (var line in File.ReadAllLines(csvPath, Encoding.UTF8))
+        if (!File.Exists(paths.CsvPath))
+            return;
+
+        foreach (var line in File.ReadAllLines(paths.CsvPath, Encoding.UTF8))
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -22,7 +19,7 @@ public class JsonService
 
             list.Add(new
             {
-                CreatedAt = parts[0],
+                Date = parts[0],
                 Category = parts[1],
                 Name = parts[2],
                 Url = parts[3]
@@ -34,6 +31,6 @@ public class JsonService
             WriteIndented = true
         });
 
-        File.WriteAllText(jsonPath, json, Encoding.UTF8);
+        File.WriteAllText(paths.DeployJsonPath, json, Encoding.UTF8);
     }
 }

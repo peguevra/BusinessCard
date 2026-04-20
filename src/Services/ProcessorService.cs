@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using BuisinessCard.Services;
 
 public class ProcessorService
 {
@@ -9,37 +10,38 @@ public class ProcessorService
         {
             SafeLog.Info("処理開始: " + filePath);
 
-            // =========================
-            // 1. 入力（Category + Name）
-            // =========================
-            var input = InputForm.ShowDialog();
+            var (category, name, updateOnly) = InputForm.ShowDialog();
 
-            var category = input.category;
-            var name = input.name;
+            // =========================
+            // 更新モード
+            // =========================
+            if (updateOnly)
+            {
+                SafeLog.Info("更新モード開始");
+                GenerateAndDeploy(paths);
+                SafeLog.Info("更新モード完了");
+                return;
+            }
 
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(category))
             {
                 SafeLog.Info("キャンセル");
                 return;
             }
 
             // =========================
-            // 2. ファイル名生成
+            // ファイル移動
             // =========================
-            var newFileName = $"{category} {name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
-
+            var newFileName = $"{category}_{name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
             var donePath = Path.Combine(paths.DoneDir, newFileName);
 
             File.Copy(filePath, donePath, true);
-
-            // 元ファイル削除
             File.Delete(filePath);
 
             // =========================
-            // 3. Google Driveアップロード
+            // Driveアップロード
             // =========================
             var drive = new GoogleDriveService();
-
             string url;
 
             try
@@ -51,13 +53,11 @@ public class ProcessorService
             catch (Exception ex)
             {
                 SafeLog.Error("Drive失敗: " + ex);
-
-                // Drive失敗でも継続
                 url = "LOCAL_ONLY";
             }
 
             // =========================
-            // 4. CSV追記
+            // CSV追記
             // =========================
             var record = new BuisicessCardRecord
             {
@@ -67,51 +67,43 @@ public class ProcessorService
                 CreatedAt = DateTime.Now
             };
 
-            var csv = new CsvService();
-
-            try
-            {
-                csv.Append(record, paths.OutputDir);
-                SafeLog.Info("CSV追記完了");
-            }
-            catch (Exception ex)
-            {
-                SafeLog.Error("CSV失敗: " + ex);
-            }
+            new CsvService().Append(record, paths.OutputDir);
 
             // =========================
-            // 5. JSON生成
+            // JSON生成＋Deploy
             // =========================
-            try
-            {
-                SafeLog.Info("JSON生成開始");
-                new JsonService().Generate(paths.OutputDir, paths.DeployDir);
-                SafeLog.Info("JSON生成完了");
-            }
-            catch (Exception ex)
-            {
-                SafeLog.Error("JSON生成失敗: " + ex);
-            }
-
-            // =========================
-            // 6. GitHub Deploy（deploy2）
-            // =========================
-            try
-            {
-                SafeLog.Info("GitHub Deploy開始");
-                new DeployService().Deploy();
-                SafeLog.Info("GitHub Deploy完了");
-            }
-            catch (Exception ex)
-            {
-                SafeLog.Error("Deploy失敗: " + ex);
-            }
+            GenerateAndDeploy(paths);
 
             SafeLog.Info("処理完了: " + name);
         }
         catch (Exception ex)
         {
             SafeLog.Error("致命的エラー: " + ex);
+        }
+    }
+
+    private void GenerateAndDeploy(GlobalPaths paths)
+    {
+        try
+        {
+            SafeLog.Info("JSON生成開始");
+            new JsonService().Generate(paths);
+            SafeLog.Info("JSON生成完了");
+        }
+        catch (Exception ex)
+        {
+            SafeLog.Error("JSON失敗: " + ex);
+        }
+
+        try
+        {
+            SafeLog.Info("GitHub Deploy開始");
+            new DeployService().DeployJson();
+            SafeLog.Info("GitHub Deploy完了");
+        }
+        catch (Exception ex)
+        {
+            SafeLog.Error("Deploy失敗: " + ex);
         }
     }
 }

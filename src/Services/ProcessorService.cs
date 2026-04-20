@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using BuisinessCard.Services;
 
 public class ProcessorService
 {
@@ -11,9 +10,12 @@ public class ProcessorService
             SafeLog.Info("処理開始: " + filePath);
 
             // =========================
-            // 1. 名前入力
+            // 1. 入力（Category + Name）
             // =========================
-            var name = InputForm.ShowDialog();
+            var input = InputForm.ShowDialog();
+
+            var category = input.category;
+            var name = input.name;
 
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -24,17 +26,17 @@ public class ProcessorService
             // =========================
             // 2. ファイル名生成
             // =========================
-            var newFileName = $"{name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            var newFileName = $"{category} {name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
 
             var donePath = Path.Combine(paths.DoneDir, newFileName);
 
             File.Copy(filePath, donePath, true);
 
-            // 元ファイル削除（重要）
+            // 元ファイル削除
             File.Delete(filePath);
 
             // =========================
-            // 3. Google Driveアップロード（安全化）
+            // 3. Google Driveアップロード
             // =========================
             var drive = new GoogleDriveService();
 
@@ -50,15 +52,16 @@ public class ProcessorService
             {
                 SafeLog.Error("Drive失敗: " + ex);
 
-                // Drive失敗でも処理継続
+                // Drive失敗でも継続
                 url = "LOCAL_ONLY";
             }
 
             // =========================
-            // 4. CSV追記（唯一の正本）
+            // 4. CSV追記
             // =========================
             var record = new BuisicessCardRecord
             {
+                Category = category,
                 Name = name,
                 Url = url,
                 CreatedAt = DateTime.Now
@@ -69,6 +72,7 @@ public class ProcessorService
             try
             {
                 csv.Append(record, paths.OutputDir);
+                SafeLog.Info("CSV追記完了");
             }
             catch (Exception ex)
             {
@@ -76,37 +80,21 @@ public class ProcessorService
             }
 
             // =========================
-            // 5. HTML再生成（CSVから毎回生成）
-            // =========================
-            var html = new HtmlService();
-
-            try
-            {
-                html.GenerateFromCsv(paths.OutputDir);
-            }
-            catch (Exception ex)
-            {
-                SafeLog.Error("HTML生成失敗: " + ex);
-            }
-
-            // =========================
-            // 6. HTMLをGoogle Driveへ反映
+            // 5. JSON生成
             // =========================
             try
             {
-                var htmlPath = Path.Combine(paths.OutputDir, "index.html");
-
-                SafeLog.Info("HTMLアップロード開始");
-                drive.UploadOrUpdateHtml(htmlPath);
-                SafeLog.Info("HTMLアップロード完了");
+                SafeLog.Info("JSON生成開始");
+                new JsonService().Generate(paths.OutputDir, paths.DeployDir);
+                SafeLog.Info("JSON生成完了");
             }
             catch (Exception ex)
             {
-                SafeLog.Error("HTML Drive反映失敗: " + ex);
+                SafeLog.Error("JSON生成失敗: " + ex);
             }
 
             // =========================
-            // 7. GitHub Deploy（追加）
+            // 6. GitHub Deploy（deploy2）
             // =========================
             try
             {
@@ -116,7 +104,7 @@ public class ProcessorService
             }
             catch (Exception ex)
             {
-                SafeLog.Error("Deploy呼び出し失敗: " + ex);
+                SafeLog.Error("Deploy失敗: " + ex);
             }
 
             SafeLog.Info("処理完了: " + name);

@@ -2,25 +2,34 @@ using System.Windows.Forms;
 
 public class InputForm
 {
-    public static string ShowDialog()
+    public static (string category, string name) ShowDialog()
     {
-        string result = "";
+        string category = "";
+        string name = "";
 
         var form = new Form
         {
             Width = 300,
-            Height = 150,
-            Text = "名前入力",
+            Height = 180,
+            Text = "入力",
             TopMost = true,
-            StartPosition = FormStartPosition.CenterScreen,
-            KeyPreview = true // Enter / Escを拾う
+            StartPosition = FormStartPosition.CenterScreen
         };
 
-        var textBox = new TextBox
+        var categoryBox = new TextBox
         {
             Left = 20,
             Top = 20,
-            Width = 240
+            Width = 240,
+            PlaceholderText = "Category (例: SW)"
+        };
+
+        var nameBox = new TextBox
+        {
+            Left = 20,
+            Top = 60,
+            Width = 240,
+            PlaceholderText = "Name"
         };
 
         var okButton = new Button
@@ -28,7 +37,7 @@ public class InputForm
             Text = "OK",
             Left = 60,
             Width = 80,
-            Top = 60
+            Top = 100
         };
 
         var cancelButton = new Button
@@ -36,43 +45,46 @@ public class InputForm
             Text = "キャンセル",
             Left = 150,
             Width = 80,
-            Top = 60
+            Top = 100
         };
 
+        // -------------------------
         // OK処理
+        // -------------------------
         okButton.Click += (s, e) =>
         {
-            result = textBox.Text;
+            category = categoryBox.Text;
+            name = nameBox.Text;
+            form.DialogResult = DialogResult.OK;
             form.Close();
         };
 
-        // キャンセル処理
+        // -------------------------
+        // キャンセル
+        // -------------------------
         cancelButton.Click += (s, e) =>
         {
-            result = "";
+            form.DialogResult = DialogResult.Cancel;
             form.Close();
         };
 
-        // EnterキーでOK
+        // ★これが重要（Enter / Esc）
         form.AcceptButton = okButton;
-
-        // Escキーでキャンセル
         form.CancelButton = cancelButton;
 
-        // 表示時に最前面＋フォーカス
+        // ★フォーカス強制
         form.Shown += (s, e) =>
         {
-            form.Activate();
-            form.BringToFront();
-            textBox.Focus();
+            nameBox.Focus();   // ←ここ重要
         };
 
-        form.Controls.Add(textBox);
+        form.Controls.Add(categoryBox);
+        form.Controls.Add(nameBox);
         form.Controls.Add(okButton);
         form.Controls.Add(cancelButton);
 
         form.ShowDialog();
 
-        return result;
+        return (category, name);
     }
 }

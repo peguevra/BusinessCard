@@ -10,13 +10,9 @@ public class CsvService
 
         lock (_lock)
         {
-            // =========================
-            // 日付フォーマット修正
-            // 旧: yyyy-MM-dd HH:mm:ss
-            // 新: yyyy/M/d HH:mm（秒なし・軽量表示）
-            // =========================
             var line =
                 $"{record.CreatedAt:yyyy/M/d HH:mm}," +
+                $"{Escape(record.Category)}," +
                 $"{Escape(record.Name)}," +
                 $"{Escape(record.Url)}";
 
@@ -28,7 +24,6 @@ public class CsvService
     {
         if (string.IsNullOrEmpty(v)) return "";
 
-        // CSV崩れ防止（カンマ対策）
         if (v.Contains(",") || v.Contains("\""))
         {
             v = v.Replace("\"", "\"\"");

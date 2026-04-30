@@ -175,7 +175,7 @@ Output
 
 ● Drive失敗
 → 通信 or 認証
-→ 再実行で復旧可能
+→ token.json(binとroot)削除後、再実行で復旧可能
 
 ● データが消えない
 → Supabaseから削除していない

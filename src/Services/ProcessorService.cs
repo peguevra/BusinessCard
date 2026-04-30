@@ -13,12 +13,14 @@ public class ProcessorService
             var (category, name, updateOnly) = InputForm.ShowDialog();
 
             // =========================
-            // 更新モード
+            // 更新モード（CSV→JSONなど）
             // =========================
             if (updateOnly)
             {
                 SafeLog.Info("更新モード開始");
+
                 GenerateAndDeploy(paths);
+
                 SafeLog.Info("更新モード完了");
                 return;
             }
@@ -30,7 +32,7 @@ public class ProcessorService
             }
 
             // =========================
-            // ファイル移動
+            // 1. ファイル移動
             // =========================
             var newFileName = $"{category}_{name}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
             var donePath = Path.Combine(paths.DoneDir, newFileName);
@@ -39,7 +41,7 @@ public class ProcessorService
             File.Delete(filePath);
 
             // =========================
-            // Driveアップロード
+            // 2. Driveアップロード
             // =========================
             var drive = new GoogleDriveService();
             string url;
@@ -57,7 +59,7 @@ public class ProcessorService
             }
 
             // =========================
-            // CSV追記
+            // 3. レコード生成
             // =========================
             var record = new BuisicessCardRecord
             {
@@ -67,12 +69,47 @@ public class ProcessorService
                 CreatedAt = DateTime.Now
             };
 
-            new CsvService().Append(record, paths.OutputDir);
+            // =========================
+            // 4. CSV追記（ログ用途）
+            // =========================
+            try
+            {
+                new CsvService().Append(record, paths.OutputDir);
+                SafeLog.Info("CSV追記完了");
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("CSV失敗: " + ex);
+            }
 
             // =========================
-            // JSON生成＋Deploy
+            // 5. Supabase登録（★本命）
             // =========================
-            GenerateAndDeploy(paths);
+            try
+            {
+                SafeLog.Info("Supabase登録開始");
+
+                var supabase = new SupabaseService();
+                supabase.Insert(record).Wait();
+
+                SafeLog.Info("Supabase登録完了");
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("Supabase失敗: " + ex);
+            }
+
+            // =========================
+            // 6. JSON＋Deploy（保険 / 互換）
+            // =========================
+            try
+            {
+                GenerateAndDeploy(paths);
+            }
+            catch (Exception ex)
+            {
+                SafeLog.Error("旧処理失敗: " + ex);
+            }
 
             SafeLog.Info("処理完了: " + name);
         }

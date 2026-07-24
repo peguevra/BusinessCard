@@ -1,0 +1,12 @@
+sct -Ai
+PS C:\Users\sr01\Desktop\MACRO\C\BuisinessCard> sct -Ai
+src/Common/SafeLog.cs
+src/Models/BuisicessCardRecord.cs
+src/Services/CsvService.cs
+src/Services/GoogleDriveService.cs
+src/Services/ProcessorService.cs
+src/Services/SupabaseService.cs
+src/Services/WatcherService.cs
+src/UI/InputForm.cs
+src/GlobalPaths.cs
+Program.cs
